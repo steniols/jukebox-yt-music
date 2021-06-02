@@ -1,0 +1,30 @@
+<mat-card>
+  <mat-card-title>Detalhes do repositório</mat-card-title>
+  <form>
+    <mat-form-field>
+      <input
+        matInput
+        placeholder="Nome"
+        [(ngModel)]="repository.name"
+        name="name"
+        disabled
+      />
+    </mat-form-field>
+    <mat-form-field class="example-full-width">
+      <mat-label>Descrição</mat-label>
+      <textarea matInput placeholder="Descrição" disabled>{{
+        repository.description
+      }}</textarea>
+    </mat-form-field>
+  </form>
+  <button
+    mat-raised-button
+    (click)="updateRepository()"
+    color="primary"
+    disabled
+  >
+    Atualizar
+  </button>
+
+  <button mat-raised-button (click)="cancel()">Cancelar</button>
+</mat-card>

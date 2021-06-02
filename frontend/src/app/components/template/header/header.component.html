@@ -1,0 +1,29 @@
+<mat-toolbar class="header mat-elevation-z4">
+  <span>
+    <a routerLink="/">
+      <img class="logo" src="assets/img/logo.png" alt="logo" />
+    </a>
+  </span>
+  <span class="title-group">
+    <a routerLink="{{ routeUrl }}">
+      <i class="material-icons v-middle">
+        {{ icon }}
+      </i>
+      {{ title }}
+    </a>
+  </span>
+  <div class="user" *ngIf="username; else loginContent">
+    <span class="user-info">
+      <h4>{{ name }}</h4>
+      <p>{{ username }}</p>
+    </span>
+    <button mat-raised-button (click)="logout()" color="primary">Logout</button>
+  </div>
+  <ng-template #loginContent>
+    <div class="user">
+      <button mat-raised-button (click)="login()" color="primary">
+        Login com o Github
+      </button>
+    </div>
+  </ng-template>
+</mat-toolbar>
