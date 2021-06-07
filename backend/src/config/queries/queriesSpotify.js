@@ -1,16 +1,16 @@
 const knex = require("./knex");
 
 module.exports = {
-  // async getToken(token) {
-  //   return knex("auth").where("token", token).first();
-  // },
-  // async saveToken(data) {
-  //   const auth = await knex("auth").where("username", data.username).first();
-  //   if (auth) {
-  //     return knex("auth").where("username", data.username).update(data);
-  //   }
-  //   return knex("auth").insert(data);
-  // },
+  async getToken(token) {
+    return knex("auth").where("token", token).first();
+  },
+  async saveToken(data) {
+    const auth = await knex("auth").where("username", data.username).first();
+    if (auth) {
+      return knex("auth").where("username", data.username).update(data);
+    }
+    return knex("auth").insert(data);
+  },
   // async getAll(user_id) {
   //   return knex("tags").where("user_id", user_id);
   // },
