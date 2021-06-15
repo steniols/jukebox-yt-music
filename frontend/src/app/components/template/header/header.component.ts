@@ -1,4 +1,3 @@
-import { GithubService } from './../../github/github.service';
 import { HeaderService } from './header.service';
 import { Component, OnInit } from '@angular/core';
 
@@ -12,7 +11,7 @@ export class HeaderComponent implements OnInit {
   username: string;
   name: string;
 
-  constructor(private headerService: HeaderService, private githubService: GithubService) { }
+  constructor(private headerService: HeaderService) { }
 
   ngOnInit(): void {
     const token = localStorage.getItem("githubToken");
@@ -34,7 +33,7 @@ export class HeaderComponent implements OnInit {
   }
  
   login(): void {
-    window.location.href="http://localhost:8003/github";
+    window.location.href="http://localhost:8003/spotify/login";
   }
 
   logout(): void {
@@ -43,9 +42,9 @@ export class HeaderComponent implements OnInit {
   }
 
   getUser(): void {
-    this.githubService.getUser().subscribe((res) =>{
-      this.username = res.data.login;
-      this.name = res.data.name;
-    }) 
+    // this.spotifyService.getUser().subscribe((res) =>{
+    //   this.username = res.data.login;
+    //   this.name = res.data.name;
+    // }) 
   }
 }
