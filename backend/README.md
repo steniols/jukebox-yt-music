@@ -1,3 +1,5 @@
+# Install API (backend)
+
 ## Requirements
 
 * Docker(v20.10.6) installed.
@@ -8,7 +10,7 @@
   2) *Authorization callback URL* must be `http://localhost:8003/spotify/callback`
   3) Generate a Client Secret and save both *Client ID* and *Client Secret* for use later.
 
-## Install API (backend)
+## Update configs and install dependencies
 
 First we need to create a `.env` file and update its variables with your local Postgres configs and Spotify APP *Client ID* and *Client Secret*:
 
@@ -26,6 +28,7 @@ Install Node dependencies
 ```bash
 npm install
 ```
+
 ## Database Setup
 
 Run the command below that will create the database inside a Docker image:
