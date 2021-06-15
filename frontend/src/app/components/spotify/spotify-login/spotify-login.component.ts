@@ -9,7 +9,7 @@ import { Component, OnInit } from '@angular/core';
 })
 export class SpotifyLoginComponent implements OnInit {
 
-  constructor(private router: Router, private route: ActivatedRoute) { }
+  constructor(private route: ActivatedRoute) { }
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {

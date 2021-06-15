@@ -91,4 +91,17 @@ router.get("/callback", (req, res) => {
     });
 });
 
+router.post("/user/", async (req, res) => {
+  try {
+    const token = await queries.getToken(req.body.token);
+    spotifyApi.setAccessToken(token.token);
+    spotifyApi.setRefreshToken(token.refresh_token);
+    const data = await getMyData();
+    res.json({ data });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Server Error");
+  }
+});
+
 module.exports = router;

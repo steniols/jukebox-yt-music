@@ -1,5 +1,6 @@
 import { HeaderService } from './header.service';
 import { Component, OnInit } from '@angular/core';
+import { SpotifyService } from '../../spotify/spotify.service';
 
 @Component({
   selector: 'app-header',
@@ -11,10 +12,10 @@ export class HeaderComponent implements OnInit {
   username: string;
   name: string;
 
-  constructor(private headerService: HeaderService) { }
+  constructor(private headerService: HeaderService, private spotifyService: SpotifyService) { }
 
   ngOnInit(): void {
-    const token = localStorage.getItem("githubToken");
+    const token = localStorage.getItem("token");
     if (token) {
       this.getUser() 
     }
@@ -42,9 +43,9 @@ export class HeaderComponent implements OnInit {
   }
 
   getUser(): void {
-    // this.spotifyService.getUser().subscribe((res) =>{
-    //   this.username = res.data.login;
-    //   this.name = res.data.name;
-    // }) 
+    this.spotifyService.getUser().subscribe((res) =>{
+      this.username = res.data.id;
+      this.name = res.data.display_name;
+    }); 
   }
 }
