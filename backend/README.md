@@ -1,4 +1,6 @@
-# Install API (backend)
+# Backend
+
+Studies using Spotify API
 
 ## Requirements
 
