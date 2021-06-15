@@ -13,9 +13,13 @@ export class SpotifyLoginComponent implements OnInit {
 
   ngOnInit(): void {
     this.route.queryParams.subscribe(params => {
-      const code = params['code'];
-      if (code) {
-        localStorage.setItem("spotifyCode", code);
+      const token = params['token'];
+      if (token) {
+        localStorage.setItem("token", token);
+      }
+      const username = params['username'];
+      if (username) {
+        localStorage.setItem("username", username);
       }
       window.location.href="http://localhost:4200/";
     });

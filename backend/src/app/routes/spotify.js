@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const axios = require("axios");
+// const axios = require("axios");
 const queries = require("../../config/queries/queriesSpotify");
 require("dotenv").config();
 const SpotifyWebApi = require("spotify-web-api-node");
@@ -33,14 +33,8 @@ const spotifyApi = new SpotifyWebApi({
 });
 
 async function getMyData() {
-  // (async () => {
   const me = await spotifyApi.getMe();
-  // console.log(me.body);
   return me.body;
-  // getUserPlaylists(me.body.id);
-  // })().catch((e) => {
-  //   console.error(e);
-  // });
 }
 
 router.get("/login", (req, res) => {
@@ -76,14 +70,6 @@ router.get("/callback", (req, res) => {
         username: my_data.id,
       });
 
-      // console.log("access_token:", access_token);
-      // console.log("refresh_token:", refresh_token);
-
-      // console.log(
-      //   `Sucessfully retreived access token. Expires in ${expires_in} s.`
-      // );
-      // res.send("Success! You can now close the window.");
-
       setInterval(async () => {
         const data = await spotifyApi.refreshAccessToken();
         const access_token = data.body["access_token"];
@@ -96,7 +82,7 @@ router.get("/callback", (req, res) => {
       res.redirect(
         `${
           process.env.NODE_ENV == "production" ? "/" : process.env.APP_URL
-        }?username=${user.login}&token=${token}`
+        }?username=${my_data.id}&token=${access_token}`
       );
     })
     .catch((error) => {
