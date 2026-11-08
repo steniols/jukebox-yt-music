@@ -30,7 +30,6 @@ import { RedDirective } from './directives/red.directive';
 import localePt from '@angular/common/locales/pt';
 import { registerLocaleData } from  '@angular/common';
 import { ForDirective } from './directives/for.directive';
-import { SpotifyLoginComponent } from './components/spotify/spotify-login/spotify-login.component';
 import { UserComponent } from './views/user/user.component';
 
 registerLocaleData(localePt);
@@ -44,7 +43,6 @@ registerLocaleData(localePt);
     HomeComponent,
     RedDirective,
     ForDirective,
-    SpotifyLoginComponent,
     UserComponent,
   ],
   imports: [

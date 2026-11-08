@@ -1,31 +1,31 @@
-const express = require("express");
-const app = express();
-const bodyParser = require("body-parser");
-const cors = require("cors");
-const path = require("path");
-app.use(cors());
-require("dotenv").config();
+require("./env");
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Methods",
-    "GET, POST, OPTIONS, PUT, PATCH, DELETE"
-  );
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept"
-  );
-  next();
+const path = require("path");
+const cookieParser = require("cookie-parser");
+const express = require("express");
+
+const app = express();
+
+app.disable("x-powered-by");
+app.use(cookieParser());
+app.use(express.json());
+
+app.use("/api/spotify", require("../app/routes/spotify"));
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "Rota não encontrada" });
 });
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-if (process.env.NODE_ENV == "production") {
-  app.use(express.static(path.join(__dirname, "/../../client/build")));
+if (process.env.NODE_ENV === "production") {
+  const frontendDir = path.join(__dirname, "../../../frontend/dist/frontend");
+  app.use(express.static(frontendDir));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(frontendDir, "index.html"));
+  });
 }
 
-app.use("/spotify", require("../app/routes/spotify"));
+app.use((error, req, res, next) => {
+  console.error(error.message);
+  res.status(500).json({ error: "Erro interno do servidor" });
+});
 
 module.exports = app;

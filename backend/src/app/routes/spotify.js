@@ -1,106 +1,194 @@
+const crypto = require("crypto");
 const router = require("express").Router();
-// const axios = require("axios");
 const queries = require("../../config/queries/queriesSpotify");
-require("dotenv").config();
-const SpotifyWebApi = require("spotify-web-api-node");
+const spotify = require("../services/spotifyClient");
+const {
+  TokenDecryptError,
+  encrypt,
+  decrypt,
+} = require("../services/tokenCipher");
 
-const scopes = [
-  "ugc-image-upload",
-  "user-read-playback-state",
-  "user-modify-playback-state",
-  "user-read-currently-playing",
-  "streaming",
-  "app-remote-control",
-  "user-read-email",
-  "user-read-private",
-  "playlist-read-collaborative",
-  "playlist-modify-public",
-  "playlist-read-private",
-  "playlist-modify-private",
-  "user-library-modify",
-  "user-library-read",
-  "user-top-read",
-  "user-read-playback-position",
-  "user-read-recently-played",
-  "user-follow-read",
-  "user-follow-modify",
-];
+const STATE_COOKIE = "spotify_oauth_state";
+const SESSION_COOKIE = "session";
+const STATE_MAX_AGE_MS = 10 * 60 * 1000;
+const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+const TOKEN_EXPIRY_MARGIN_MS = 60 * 1000;
 
-const spotifyApi = new SpotifyWebApi({
-  clientId: process.env.CLIENT_ID,
-  clientSecret: process.env.CLIENT_SECRET,
-  redirectUri: process.env.REDIRECT_URI,
-});
+// Evita renovar o mesmo token duas vezes quando há requisições simultâneas.
+const refreshesInProgress = new Map();
 
-async function getMyData() {
-  const me = await spotifyApi.getMe();
-  return me.body;
+function cookieOptions(maxAge) {
+  return {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/api/spotify",
+    ...(maxAge ? { maxAge } : {}),
+  };
+}
+
+const hashSessionId = (id) =>
+  crypto.createHash("sha256").update(id).digest("hex");
+
+const expiresAt = (expiresInSeconds) =>
+  new Date(Date.now() + expiresInSeconds * 1000);
+
+function statesMatch(received, expected) {
+  if (typeof received !== "string" || typeof expected !== "string") return false;
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+function redirectWithLoginError(res, code) {
+  res.redirect(`/?login_error=${encodeURIComponent(code)}`);
+}
+
+function refreshAuth(auth) {
+  if (refreshesInProgress.has(auth.id)) {
+    return refreshesInProgress.get(auth.id);
+  }
+
+  const refresh = (async () => {
+    const tokens = await spotify.refreshAccessToken(decrypt(auth.refresh_token));
+    const changes = {
+      token: encrypt(tokens.access_token),
+      expires_at: expiresAt(tokens.expires_in),
+    };
+    // O Spotify só envia um novo refresh token quando decide trocá-lo.
+    if (tokens.refresh_token) {
+      changes.refresh_token = encrypt(tokens.refresh_token);
+    }
+    return queries.updateAuth(auth.id, changes);
+  })().finally(() => refreshesInProgress.delete(auth.id));
+
+  refreshesInProgress.set(auth.id, refresh);
+  return refresh;
+}
+
+async function getProfile(auth) {
+  const isExpiring =
+    new Date(auth.expires_at).getTime() - TOKEN_EXPIRY_MARGIN_MS <= Date.now();
+  const current = isExpiring ? await refreshAuth(auth) : auth;
+
+  try {
+    return await spotify.getMe(decrypt(current.token));
+  } catch (error) {
+    if (error.status !== 401) throw error;
+    // O token pode ter sido invalidado antes do prazo: renova e tenta uma vez.
+    const refreshed = await refreshAuth(current);
+    return spotify.getMe(decrypt(refreshed.token));
+  }
+}
+
+async function requireSession(req, res, next) {
+  try {
+    const sessionId = req.cookies[SESSION_COOKIE];
+    const auth = sessionId
+      ? await queries.getAuthBySession(hashSessionId(sessionId))
+      : null;
+
+    if (!auth) {
+      res.clearCookie(SESSION_COOKIE, cookieOptions());
+      return res.status(401).json({ error: "Sessão inválida ou expirada" });
+    }
+
+    req.auth = auth;
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
 
 router.get("/login", (req, res) => {
-  res.redirect(spotifyApi.createAuthorizeURL(scopes));
+  const state = crypto.randomBytes(32).toString("hex");
+  res.cookie(STATE_COOKIE, state, cookieOptions(STATE_MAX_AGE_MS));
+  res.redirect(spotify.buildAuthorizeUrl(state));
 });
 
-router.get("/callback", (req, res) => {
-  const error = req.query.error;
-  const code = req.query.code;
-  const state = req.query.state;
+router.get("/callback", async (req, res) => {
+  const { code, error, state } = req.query;
+  const expectedState = req.cookies[STATE_COOKIE];
+  res.clearCookie(STATE_COOKIE, cookieOptions());
 
+  // O state vem primeiro: nada da resposta é confiável sem ele.
+  if (!statesMatch(state, expectedState)) {
+    return redirectWithLoginError(res, "invalid_state");
+  }
   if (error) {
-    console.error("Callback Error:", error);
-    res.send(`Callback Error: ${error}`);
-    return;
+    return redirectWithLoginError(
+      res,
+      error === "access_denied" ? "access_denied" : "spotify_error"
+    );
+  }
+  if (typeof code !== "string" || !code) {
+    return redirectWithLoginError(res, "spotify_error");
   }
 
-  spotifyApi
-    .authorizationCodeGrant(code)
-    .then(async (data) => {
-      const access_token = data.body["access_token"];
-      const refresh_token = data.body["refresh_token"];
-      const expires_in = data.body["expires_in"];
-
-      spotifyApi.setAccessToken(access_token);
-      spotifyApi.setRefreshToken(refresh_token);
-
-      const my_data = await getMyData();
-
-      queries.saveToken({
-        token: access_token,
-        refresh_token: refresh_token,
-        username: my_data.id,
-      });
-
-      setInterval(async () => {
-        const data = await spotifyApi.refreshAccessToken();
-        const access_token = data.body["access_token"];
-
-        console.log("The access token has been refreshed!");
-        console.log("access_token:", access_token);
-        spotifyApi.setAccessToken(access_token);
-      }, (expires_in / 2) * 1000);
-
-      res.redirect(
-        `${
-          process.env.NODE_ENV == "production" ? "/" : process.env.APP_URL
-        }?username=${my_data.id}&token=${access_token}`
-      );
-    })
-    .catch((error) => {
-      console.error("Error getting Tokens:", error);
-      res.send(`Error getting Tokens: ${error}`);
+  try {
+    const tokens = await spotify.exchangeCode(code);
+    const profile = await spotify.getMe(tokens.access_token);
+    const auth = await queries.saveAuth({
+      username: profile.id,
+      token: encrypt(tokens.access_token),
+      refresh_token: encrypt(tokens.refresh_token),
+      expires_at: expiresAt(tokens.expires_in),
     });
+
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    await queries.createSession({
+      id_hash: hashSessionId(sessionId),
+      auth_id: auth.id,
+      expires_at: new Date(Date.now() + SESSION_MAX_AGE_MS),
+    });
+
+    res.cookie(SESSION_COOKIE, sessionId, cookieOptions(SESSION_MAX_AGE_MS));
+    res.redirect("/");
+  } catch (loginError) {
+    console.error("Falha no login com o Spotify:", loginError.message);
+    redirectWithLoginError(res, "spotify_error");
+  }
 });
 
-router.post("/user/", async (req, res) => {
+router.get("/me", requireSession, async (req, res, next) => {
   try {
-    const token = await queries.getToken(req.body.token);
-    spotifyApi.setAccessToken(token.token);
-    spotifyApi.setRefreshToken(token.refresh_token);
-    const data = await getMyData();
-    res.json({ data });
+    const profile = await getProfile(req.auth);
+    res.json({ data: { id: profile.id, display_name: profile.display_name } });
   } catch (error) {
-    console.log(error.message);
-    res.status(500).send("Server Error");
+    try {
+      // Autorização revogada ou tokens ilegíveis (a chave de criptografia mudou):
+      // não há como recuperar, então é preciso fazer login novamente.
+      const mustLogin =
+        error instanceof TokenDecryptError ||
+        (error instanceof spotify.SpotifyError &&
+          (error.code === "invalid_grant" || error.status === 401));
+
+      if (mustLogin) {
+        await queries.deleteAuth(req.auth.id);
+        res.clearCookie(SESSION_COOKIE, cookieOptions());
+        return res.status(401).json({ error: "Sessão inválida ou expirada" });
+      }
+
+      if (error instanceof spotify.SpotifyError) {
+        console.error("Erro ao consultar o Spotify:", error.message);
+        return res.status(502).json({ error: "Spotify indisponível" });
+      }
+
+      next(error);
+    } catch (cleanupError) {
+      next(cleanupError);
+    }
+  }
+});
+
+router.post("/logout", async (req, res, next) => {
+  try {
+    const sessionId = req.cookies[SESSION_COOKIE];
+    if (sessionId) await queries.deleteSession(hashSessionId(sessionId));
+    res.clearCookie(SESSION_COOKIE, cookieOptions());
+    res.status(204).end();
+  } catch (error) {
+    next(error);
   }
 });
 

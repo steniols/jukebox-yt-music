@@ -15,10 +15,7 @@ export class HeaderComponent implements OnInit {
   constructor(private headerService: HeaderService, private spotifyService: SpotifyService) { }
 
   ngOnInit(): void {
-    const token = localStorage.getItem("token");
-    if (token) {
-      this.getUser() 
-    }
+    this.getUser();
   }
 
   get title(): string {
@@ -32,20 +29,23 @@ export class HeaderComponent implements OnInit {
   get routeUrl(): string {
     return this.headerService.headerData.routeUrl
   }
- 
+
   login(): void {
-    window.location.href="http://localhost:8003/spotify/login";
+    this.spotifyService.login();
   }
 
   logout(): void {
-    localStorage.clear();
-    window.location.href="http://localhost:4200/";
+    this.spotifyService.logout().subscribe(() => {
+      window.location.href = "/";
+    });
   }
 
   getUser(): void {
-    this.spotifyService.getUser().subscribe((res) =>{
-      this.username = res.data.id;
-      this.name = res.data.display_name;
-    }); 
+    this.spotifyService.getUser().subscribe((res) => {
+      if (res) {
+        this.username = res.data.id;
+        this.name = res.data.display_name;
+      }
+    });
   }
 }

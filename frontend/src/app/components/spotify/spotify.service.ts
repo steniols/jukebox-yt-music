@@ -1,7 +1,7 @@
-import { map, catchError } from 'rxjs/operators';
+import { catchError } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { EMPTY, Observable } from 'rxjs';
-import { HttpClient } from '@angular/common/http';
+import { EMPTY, Observable, of } from 'rxjs';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 @Injectable({
@@ -9,7 +9,7 @@ import { Injectable } from '@angular/core';
 })
 export class SpotifyService {
 
-  baseUrl = 'http://localhost:8003/spotify'
+  baseUrl = '/api/spotify'
 
   constructor(private snackBar: MatSnackBar, private http: HttpClient) { }
 
@@ -27,14 +27,20 @@ export class SpotifyService {
     return EMPTY;
   }
 
+  login(): void {
+    window.location.href = `${this.baseUrl}/login`;
+  }
+
+  logout(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/logout`, null).pipe(
+      catchError(e => this.errorHandler(e))
+    );
+  }
+
+  // Emite null quando não há sessão: visitante não é uma situação de erro.
   getUser(): Observable<any> {
-    const token = localStorage.getItem("token");
-    const data = {
-      token: token
-    };
-    const url = `${this.baseUrl}/user`;
-    return this.http.post<any>(url, data).pipe(
-      map(obj => obj), catchError(e => this.errorHandler(e))
+    return this.http.get<any>(`${this.baseUrl}/me`).pipe(
+      catchError((e: HttpErrorResponse) => e.status === 401 ? of(null) : this.errorHandler(e))
     );
   }
 }

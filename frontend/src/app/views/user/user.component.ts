@@ -12,34 +12,28 @@ export class UserComponent implements OnInit {
 
   username: string;
   name: string;
-  email: string;
 
-  constructor(private router: Router, private headerService: HeaderService, private spotifyService: SpotifyService) { 
+  constructor(private router: Router, private headerService: HeaderService, private spotifyService: SpotifyService) {
     headerService.headerData = {
       title: 'Dados do usuário',
       icon: 'account_circle',
       routeUrl: 'user'
     }
-
-    if (!localStorage.getItem("token")) {
-      this.router.navigate(["/"]);
-    }
   }
 
   ngOnInit(): void {
-    const token = localStorage.getItem("token");
-    if (token) {
-      this.getUser() 
-    }
+    this.getUser();
   }
 
   getUser(): void {
-    this.spotifyService.getUser().subscribe((res) =>{
-      console.log(res);
+    this.spotifyService.getUser().subscribe((res) => {
+      if (!res) {
+        this.router.navigate(["/"]);
+        return;
+      }
       this.username = res.data.id;
       this.name = res.data.display_name;
-      this.email = res.data.email;
-    }); 
+    });
   }
 
 }
