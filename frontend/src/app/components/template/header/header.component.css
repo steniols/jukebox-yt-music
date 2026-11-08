@@ -14,8 +14,13 @@
     color: #fff;
 }
 
-.header .logo {
-    max-height: 45px;
+.header .brand {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.header .brand i {
+    padding-right: 8px;
 }
 
 .header .title-group {

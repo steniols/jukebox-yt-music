@@ -1,5 +1,5 @@
 import { Router } from '@angular/router';
-import { SpotifyService } from './../../components/spotify/spotify.service';
+import { YoutubeService } from './../../components/youtube/youtube.service';
 import { HeaderService } from './../../components/template/header/header.service';
 import { Component, OnInit } from '@angular/core';
 
@@ -13,7 +13,7 @@ export class UserComponent implements OnInit {
   username: string;
   name: string;
 
-  constructor(private router: Router, private headerService: HeaderService, private spotifyService: SpotifyService) {
+  constructor(private router: Router, private headerService: HeaderService, private youtubeService: YoutubeService) {
     headerService.headerData = {
       title: 'Dados do usuário',
       icon: 'account_circle',
@@ -26,7 +26,7 @@ export class UserComponent implements OnInit {
   }
 
   getUser(): void {
-    this.spotifyService.getUser().subscribe((res) => {
+    this.youtubeService.getUser().subscribe((res) => {
       if (!res) {
         this.router.navigate(["/"]);
         return;

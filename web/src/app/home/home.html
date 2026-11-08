@@ -1,0 +1,106 @@
+@if (session.user() === undefined) {
+  <div class="spinner" role="status" aria-label="Carregando"></div>
+} @else if (session.user() === null) {
+  <section class="hero stack">
+    <h1>A música da festa, escolhida por todo mundo</h1>
+    <p class="muted">
+      Crie uma playlist no seu YouTube e compartilhe o link. Quem receber adiciona músicas e vota
+      na próxima, sem precisar de conta.
+    </p>
+    <div>
+      <button type="button" class="button" (click)="session.login()">Entrar com o Google</button>
+    </div>
+  </section>
+} @else {
+  <div class="stack">
+    <form class="card stack" (submit)="create($event)">
+      <h1>Nova jukebox</h1>
+      <label class="field">
+        Nome
+        <input
+          name="title"
+          required
+          maxlength="150"
+          placeholder="Ex.: Churrasco de sábado"
+          [ngModel]="title()"
+          (ngModelChange)="title.set($event)"
+        />
+      </label>
+      <label class="field">
+        Playlist no YouTube
+        <select name="privacy" [ngModel]="privacy()" (ngModelChange)="privacy.set($event)">
+          <option value="unlisted">Não listada</option>
+          <option value="private">Privada</option>
+          <option value="public">Pública</option>
+        </select>
+      </label>
+      <div>
+        <button type="submit" class="button" [disabled]="!title().trim() || saving()">
+          {{ saving() ? 'Criando…' : 'Criar jukebox' }}
+        </button>
+      </div>
+    </form>
+
+    <section class="stack" aria-label="Suas jukeboxes">
+      <h2>Suas jukeboxes</h2>
+
+      @if (loading()) {
+        <div class="spinner" role="status" aria-label="Carregando"></div>
+      } @else {
+        @for (jukebox of jukeboxes(); track jukebox.id) {
+          <article class="card stack jukebox" data-testid="jukebox">
+            <div class="jukebox-head">
+              <div>
+                <h3>{{ jukebox.title }}</h3>
+                <p class="muted small-text">
+                  {{ jukebox.queuedCount }} {{ jukebox.queuedCount === 1 ? 'música' : 'músicas' }}
+                  na fila
+                </p>
+              </div>
+              <span class="badge" [class.on]="jukebox.active">
+                {{ jukebox.active ? 'Link ativo' : 'Link encerrado' }}
+              </span>
+            </div>
+
+            @if (jukebox.shareToken) {
+              <div class="link-row">
+                <input
+                  #linkInput
+                  readonly
+                  aria-label="Link da jukebox"
+                  [value]="shareUrl(jukebox)"
+                  (focus)="linkInput.select()"
+                />
+                <button type="button" class="button" (click)="copy(jukebox, linkInput)">Copiar</button>
+              </div>
+            } @else {
+              <p class="notice">Este link não pode mais ser exibido. Gere um novo para compartilhar.</p>
+            }
+
+            <div class="actions">
+              @if (jukebox.shareToken) {
+                <a class="button ghost small" [routerLink]="['/tocar', jukebox.id]">Abrir e tocar</a>
+              }
+              <a
+                class="button ghost small"
+                [href]="playlistUrl(jukebox)"
+                target="_blank"
+                rel="noopener noreferrer"
+                >Ver playlist</a
+              >
+              <button type="button" class="button ghost small" (click)="toggleActive(jukebox)">
+                {{ jukebox.active ? 'Encerrar link' : 'Reativar link' }}
+              </button>
+              <button type="button" class="button ghost small" (click)="regenerate(jukebox)">
+                Novo link
+              </button>
+              <button type="button" class="button danger small" (click)="remove(jukebox)">Excluir</button>
+            </div>
+          </article>
+        } @empty {
+          <p class="muted">Você ainda não criou nenhuma jukebox.</p>
+        }
+      }
+    </section>
+  </div>
+}

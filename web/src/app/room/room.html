@@ -1,0 +1,187 @@
+@if (closedMessage(); as message) {
+  <section class="card stack closed">
+    <h1>Jukebox indisponível</h1>
+    <p class="muted">{{ message }}</p>
+  </section>
+} @else if (state(); as room) {
+  <div class="stack">
+    <h1>{{ room.title }}</h1>
+
+    @if (offline()) {
+      <p class="notice" role="status">Sem conexão. Tentando novamente…</p>
+    }
+    @if (!room.active) {
+      <p class="notice">
+        O link está encerrado: convidados não têm acesso. Reative-o na página inicial para aceitar
+        músicas e votos.
+      </p>
+    }
+
+    @if (room.isHost) {
+      <section class="card stack" aria-label="Controles do dono">
+        @if (!playing()) {
+          <p class="muted small-text">
+            A música toca neste navegador. Mantenha esta página aberta durante a festa.
+          </p>
+          <div>
+            <button type="button" class="button" (click)="start()">▶ Iniciar a jukebox</button>
+          </div>
+        } @else {
+          <app-youtube-player
+            [videoId]="nowPlayingId()"
+            (ended)="onEnded()"
+            (failed)="onPlayerFailed($event)"
+            (autoplayBlocked)="autoplayBlocked.set(true)"
+          />
+          @if (autoplayBlocked()) {
+            <p class="notice">O navegador bloqueou o início automático. Toque no play do vídeo.</p>
+          }
+          @if (room.nowPlaying) {
+            <div>
+              <button type="button" class="button ghost small" (click)="skip()">Pular música</button>
+            </div>
+          }
+        }
+      </section>
+    }
+
+    <section class="card now-playing" aria-label="Tocando agora">
+      <p class="eyebrow">Tocando agora</p>
+      @if (room.nowPlaying; as track) {
+        <div class="track">
+          @if (track.thumbnailUrl) {
+            <img class="cover" [src]="track.thumbnailUrl" alt="" />
+          }
+          <div class="track-info">
+            <p class="track-title" data-testid="now-playing">{{ track.title }}</p>
+            <p class="muted small-text">
+              {{ track.channel }} · {{ duration(track.durationSeconds) }}
+              @if (track.addedBy) {
+                · por {{ track.addedBy }}
+              }
+            </p>
+          </div>
+        </div>
+      } @else {
+        <p class="muted">Nada tocando ainda. Adicione uma música para começar.</p>
+      }
+    </section>
+
+    @if (room.active) {
+      <form class="card stack" (submit)="add($event)">
+        <h2>Adicionar música</h2>
+        <label class="field">
+          Link do YouTube ou do YouTube Music
+          <input
+            name="url"
+            type="url"
+            inputmode="url"
+            required
+            autocomplete="off"
+            placeholder="https://music.youtube.com/watch?v=…"
+            [ngModel]="url()"
+            (ngModelChange)="url.set($event)"
+          />
+        </label>
+        <label class="field">
+          Seu nome (opcional)
+          <input
+            name="name"
+            maxlength="40"
+            autocomplete="nickname"
+            [ngModel]="name()"
+            (ngModelChange)="name.set($event)"
+          />
+        </label>
+        <div>
+          <button type="submit" class="button" [disabled]="!url().trim() || adding()">
+            {{ adding() ? 'Adicionando…' : 'Adicionar à fila' }}
+          </button>
+        </div>
+        <p class="muted small-text">No app, toque em Compartilhar e depois em Copiar link.</p>
+      </form>
+
+      @if (room.isHost) {
+        <form class="card stack" (submit)="importPlaylist($event)">
+          <h2>Importar playlist</h2>
+          <label class="field">
+            Link da playlist
+            <input
+              name="importUrl"
+              type="url"
+              inputmode="url"
+              required
+              autocomplete="off"
+              placeholder="https://music.youtube.com/playlist?list=…"
+              [ngModel]="importUrl()"
+              (ngModelChange)="importUrl.set($event)"
+            />
+          </label>
+          <div>
+            <button type="submit" class="button" [disabled]="!importUrl().trim() || importing()">
+              {{ importing() ? 'Importando…' : 'Importar para a fila' }}
+            </button>
+          </div>
+          <p class="muted small-text">
+            Até 50 músicas por vez, sem espaço para mais de 100 na fila. As importadas ficam só na
+            jukebox e não entram na playlist do YouTube.
+          </p>
+        </form>
+      }
+    }
+
+    <section class="stack" aria-label="Fila">
+      <div>
+        <h2>Vote na próxima</h2>
+        <p class="muted small-text">Você tem um voto por rodada. A mais votada toca em seguida.</p>
+      </div>
+
+      @for (track of room.queue; track track.id; let first = $first) {
+        <article class="card track" data-testid="queue-item">
+          @if (track.thumbnailUrl) {
+            <img class="cover" [src]="track.thumbnailUrl" alt="" loading="lazy" />
+          }
+          <div class="track-info">
+            <p class="track-title">
+              {{ track.title }}
+              @if (first) {
+                <span class="badge on">Próxima</span>
+              }
+            </p>
+            <p class="muted small-text">
+              {{ track.channel }} · {{ duration(track.durationSeconds) }}
+              @if (track.addedBy) {
+                · por {{ track.addedBy }}
+              }
+            </p>
+            <div class="track-actions">
+              @if (room.active) {
+                <button
+                  type="button"
+                  class="button small"
+                  [class.ghost]="!track.votedByMe"
+                  [class.selected]="track.votedByMe"
+                  [attr.aria-pressed]="track.votedByMe"
+                  (click)="toggleVote(track)"
+                >
+                  {{ track.votedByMe ? 'Votada' : 'Votar' }} · {{ voteLabel(track.votes ?? 0) }}
+                </button>
+              } @else {
+                <span class="muted small-text">{{ voteLabel(track.votes ?? 0) }}</span>
+              }
+              @if (room.isHost) {
+                <button type="button" class="button danger small" (click)="remove(track)">
+                  Remover
+                </button>
+              }
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <p class="muted">A fila está vazia.</p>
+      }
+    </section>
+  </div>
+} @else {
+  <div class="spinner" role="status" aria-label="Carregando"></div>
+}

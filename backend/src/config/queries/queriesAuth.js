@@ -1,5 +1,18 @@
 const knex = require("./knex");
 
+// Sem sessões, o token só é mantido se houver jukebox ativa: os convidados
+// dependem dele para adicionar músicas enquanto o dono está fora.
+async function releaseTokens(trx, authId, { keepForActive }) {
+  const jukeboxes = await trx("jukeboxes").where("auth_id", authId);
+  if (!jukeboxes.length) {
+    return trx("auth").where("id", authId).del();
+  }
+  if (keepForActive && jukeboxes.some((jukebox) => jukebox.active)) return;
+  return trx("auth")
+    .where("id", authId)
+    .update({ token: null, refresh_token: null });
+}
+
 module.exports = {
   async saveAuth(data) {
     const [auth] = await knex("auth")
@@ -10,13 +23,22 @@ module.exports = {
     return auth;
   },
 
+  async getAuth(id) {
+    return knex("auth").where({ id }).first();
+  },
+
   async updateAuth(id, data) {
     const [auth] = await knex("auth").where({ id }).update(data).returning("*");
     return auth;
   },
 
-  async deleteAuth(id) {
-    return knex("auth").where({ id }).del();
+  // Autorização perdida: encerra as sessões e descarta os tokens, sem apagar
+  // as jukeboxes, que voltam a funcionar quando o dono entrar de novo.
+  async revokeAuth(id) {
+    return knex.transaction(async (trx) => {
+      await trx("sessions").where("auth_id", id).del();
+      await releaseTokens(trx, id, { keepForActive: false });
+    });
   },
 
   async createSession(session) {
@@ -32,7 +54,6 @@ module.exports = {
       .first("auth.*");
   },
 
-  // Remove a sessão e, se era a última do usuário, também os tokens dele.
   async deleteSession(idHash) {
     return knex.transaction(async (trx) => {
       const session = await trx("sessions").where("id_hash", idHash).first();
@@ -43,7 +64,7 @@ module.exports = {
         .where("auth_id", session.auth_id)
         .first();
       if (!remaining) {
-        await trx("auth").where("id", session.auth_id).del();
+        await releaseTokens(trx, session.auth_id, { keepForActive: true });
       }
     });
   },

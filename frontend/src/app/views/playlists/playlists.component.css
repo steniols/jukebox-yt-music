@@ -1,0 +1,39 @@
+.playlists {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.playlist-title {
+    font-weight: 500;
+}
+
+.playlist-description {
+    color: rgba(0, 0, 0, 0.6);
+    font-size: 12px;
+}
+
+td.mat-cell {
+    padding-top: 8px;
+    padding-bottom: 8px;
+}
+
+.row-actions {
+    white-space: nowrap;
+}
+
+.empty {
+    margin: 16px 0 0;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+.load-more {
+    display: flex;
+    justify-content: center;
+    padding-top: 12px;
+}

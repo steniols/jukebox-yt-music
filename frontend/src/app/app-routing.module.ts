@@ -1,4 +1,5 @@
 import { UserComponent } from './views/user/user.component';
+import { PlaylistsComponent } from './views/playlists/playlists.component';
 import { NgModule } from "@angular/core";
 import { Routes, RouterModule } from "@angular/router";
 
@@ -9,6 +10,10 @@ const routes: Routes = [
   {
     path: "",
     component: HomeComponent
+  },
+  {
+    path: "playlists",
+    component: PlaylistsComponent
   },
   {
     path: "user",

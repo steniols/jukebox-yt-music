@@ -7,8 +7,8 @@ require("dotenv").config({
 });
 
 const REQUIRED = [
-  "CLIENT_ID",
-  "CLIENT_SECRET",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
   "REDIRECT_URI",
   "TOKEN_ENCRYPTION_KEY",
 ];

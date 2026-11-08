@@ -1,6 +1,6 @@
 import { HeaderService } from './header.service';
 import { Component, OnInit } from '@angular/core';
-import { SpotifyService } from '../../spotify/spotify.service';
+import { YoutubeService } from '../../youtube/youtube.service';
 
 @Component({
   selector: 'app-header',
@@ -12,7 +12,7 @@ export class HeaderComponent implements OnInit {
   username: string;
   name: string;
 
-  constructor(private headerService: HeaderService, private spotifyService: SpotifyService) { }
+  constructor(private headerService: HeaderService, private youtubeService: YoutubeService) { }
 
   ngOnInit(): void {
     this.getUser();
@@ -31,17 +31,17 @@ export class HeaderComponent implements OnInit {
   }
 
   login(): void {
-    this.spotifyService.login();
+    this.youtubeService.login();
   }
 
   logout(): void {
-    this.spotifyService.logout().subscribe(() => {
+    this.youtubeService.logout().subscribe(() => {
       window.location.href = "/";
     });
   }
 
   getUser(): void {
-    this.spotifyService.getUser().subscribe((res) => {
+    this.youtubeService.getUser().subscribe((res) => {
       if (res) {
         this.username = res.data.id;
         this.name = res.data.display_name;

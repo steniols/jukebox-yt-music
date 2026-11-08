@@ -1,0 +1,286 @@
+:root {
+  color-scheme: dark;
+  --bg: #15121c;
+  --surface: #211c2c;
+  --surface-raised: #2c2639;
+  --border: #3d3550;
+  --text: #f4f1f8;
+  --muted: #b5adc4;
+  --accent: #ff5c6c;
+  --accent-text: #240509;
+  --success: #57d9a3;
+  --danger: #ff8a95;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  line-height: 1.45;
+}
+
+app-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+a {
+  color: inherit;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.6rem;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.account-name {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.page {
+  flex: 1;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 32px;
+}
+
+.footer {
+  padding: 14px 16px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.card {
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small-text {
+  font-size: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+
+input::placeholder {
+  color: var(--muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px 16px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  color: var(--accent-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.button.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.button.danger {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.button.small {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 0.9rem;
+}
+
+.button.selected {
+  background: var(--surface-raised);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge.on {
+  color: var(--success);
+}
+
+.notice {
+  padding: 10px 12px;
+  background: var(--surface-raised);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  margin: 32px auto;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 3s;
+  }
+}
+
+.toasts {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  max-width: 480px;
+  padding: 10px 14px;
+  background: var(--surface-raised);
+  border: 1px solid var(--success);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.toast.error {
+  border-color: var(--danger);
+}

@@ -31,6 +31,8 @@ import localePt from '@angular/common/locales/pt';
 import { registerLocaleData } from  '@angular/common';
 import { ForDirective } from './directives/for.directive';
 import { UserComponent } from './views/user/user.component';
+import { PlaylistsComponent } from './views/playlists/playlists.component';
+import { MatSelectModule } from '@angular/material/select';
 
 registerLocaleData(localePt);
 
@@ -44,6 +46,7 @@ registerLocaleData(localePt);
     RedDirective,
     ForDirective,
     UserComponent,
+    PlaylistsComponent,
   ],
   imports: [
     BrowserModule,
@@ -59,6 +62,7 @@ registerLocaleData(localePt);
     FormsModule,
     MatFormFieldModule,
     MatInputModule,
+    MatSelectModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
