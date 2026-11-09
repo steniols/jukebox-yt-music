@@ -60,8 +60,15 @@ export class Room implements OnInit, OnDestroy {
   private lastRequest = 0;
   private lastApplied = 0;
 
+  private wakeLock: WakeLockSentinel | null = null;
+  private requestingWakeLock = false;
+  private destroyed = false;
+
   private readonly onVisibility = () => {
-    if (!document.hidden) this.poll();
+    if (document.hidden) return;
+    this.poll();
+    // O navegador libera a trava quando a página sai de vista.
+    if (this.wantsScreenOn()) void this.keepScreenOn();
   };
 
   constructor() {
@@ -72,6 +79,41 @@ export class Room implements OnInit, OnDestroy {
         this.advance(null);
       }
     });
+
+    effect(() => {
+      if (this.wantsScreenOn()) {
+        void this.keepScreenOn();
+      } else {
+        this.allowScreenOff();
+      }
+    });
+  }
+
+  private wantsScreenOn(): boolean {
+    return !this.destroyed && this.playing() && !this.closedMessage();
+  }
+
+  private async keepScreenOn(): Promise<void> {
+    if (this.requestingWakeLock || (this.wakeLock && !this.wakeLock.released)) return;
+
+    this.requestingWakeLock = true;
+    try {
+      const lock = await navigator.wakeLock.request('screen');
+      if (this.wantsScreenOn()) {
+        this.wakeLock = lock;
+      } else {
+        void lock.release();
+      }
+    } catch {
+      // Sem suporte ou com a bateria baixa, a tela só segue a configuração do aparelho.
+    } finally {
+      this.requestingWakeLock = false;
+    }
+  }
+
+  private allowScreenOff(): void {
+    void this.wakeLock?.release().catch(() => undefined);
+    this.wakeLock = null;
   }
 
   ngOnInit(): void {
@@ -105,6 +147,8 @@ export class Room implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.destroyed = true;
+    this.allowScreenOff();
     this.stopPolling();
     document.removeEventListener('visibilitychange', this.onVisibility);
   }
@@ -202,6 +246,20 @@ export class Room implements OnInit, OnDestroy {
         if (!this.handleClosed(error)) this.toasts.show(errorMessage(error), true);
       },
     });
+  }
+
+  protected shareUrl(): string {
+    return `${window.location.origin}/j/${this.token}`;
+  }
+
+  protected async copyLink(input: HTMLInputElement): Promise<void> {
+    input.select();
+    try {
+      await navigator.clipboard.writeText(this.shareUrl());
+      this.toasts.show('Link copiado.');
+    } catch {
+      this.toasts.show('Link selecionado. Copie com Ctrl+C ou segurando o dedo.');
+    }
   }
 
   private importMessage(summary: ImportSummary): string {

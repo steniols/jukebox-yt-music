@@ -19,6 +19,23 @@
 
     @if (room.isHost) {
       <section class="card stack" aria-label="Controles do dono">
+        @if (room.active) {
+          <div class="share stack">
+            <p class="small-text muted">Link para convidados</p>
+            <div class="link-row">
+              <input
+                #linkInput
+                readonly
+                aria-label="Link da jukebox"
+                [value]="shareUrl()"
+                (focus)="linkInput.select()"
+              />
+              <button type="button" class="button ghost small" (click)="copyLink(linkInput)">
+                Copiar
+              </button>
+            </div>
+          </div>
+        }
         @if (!playing()) {
           <p class="muted small-text">
             A música toca neste navegador. Mantenha esta página aberta durante a festa.
